@@ -75,40 +75,29 @@ ls dist/
 # Should show: index.js, server.js, terminal/, tools/, utils/
 ```
 
-### Via npx (After Publishing)
+### Quick Install
 
-Once published to npm, you can run directly:
-
-```bash
-npx terminal-mcp
-```
-
-### Global Installation (After Publishing)
+The easiest way to install is using the install script:
 
 ```bash
-npm install -g terminal-mcp
-terminal-mcp
+curl -fsSL https://raw.githubusercontent.com/elleryfamilia/terminal-mcp/main/install.sh | bash
 ```
 
-## Claude Code Integration
+This will clone the repo, build it, and create a `terminal-mcp` symlink in your PATH.
 
-To use Terminal MCP with Claude Code, add it to your MCP server configuration.
+## MCP Client Integration
 
-### Configuration File Location
-
-- **macOS/Linux**: `~/.claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+Terminal MCP works with any MCP-compatible client. Add it to your MCP server configuration.
 
 ### Configuration
 
-Add Terminal MCP to your configuration:
+After running the install script, add Terminal MCP to your MCP client configuration:
 
 ```json
 {
   "mcpServers": {
     "terminal": {
-      "command": "node",
-      "args": ["/absolute/path/to/terminal-mcp/dist/index.js"]
+      "command": "terminal-mcp"
     }
   }
 }
@@ -120,26 +109,8 @@ With custom options:
 {
   "mcpServers": {
     "terminal": {
-      "command": "node",
-      "args": [
-        "/absolute/path/to/terminal-mcp/dist/index.js",
-        "--cols", "100",
-        "--rows", "30",
-        "--shell", "/bin/zsh"
-      ]
-    }
-  }
-}
-```
-
-After publishing to npm:
-
-```json
-{
-  "mcpServers": {
-    "terminal": {
-      "command": "npx",
-      "args": ["terminal-mcp"]
+      "command": "terminal-mcp",
+      "args": ["--cols", "100", "--rows", "30", "--shell", "/bin/zsh"]
     }
   }
 }
@@ -147,11 +118,10 @@ After publishing to npm:
 
 ### Verify Integration
 
-After configuring, restart Claude Code and verify the tools are available:
+After configuring, restart your MCP client and verify the tools are available:
 
-1. Open Claude Code
-2. The terminal tools should appear in the available tools list
-3. Try a simple command: "Use the terminal to echo hello world"
+1. The terminal tools should appear in the available tools list
+2. Try a simple command: "Use the terminal to echo hello world"
 
 ## Troubleshooting
 
@@ -184,7 +154,7 @@ node dist/index.js --shell /bin/bash
 
 1. Verify the path in your configuration is absolute
 2. Check that Node.js is in your PATH
-3. Look at Claude Code's logs for error messages
+3. Look at your MCP client's logs for error messages
 4. Test the server manually:
 
 ```bash
@@ -213,16 +183,17 @@ npm run build
 
 ## Updating
 
-### From Source
+Re-run the install script to update:
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/elleryfamilia/terminal-mcp/main/install.sh | bash
+```
+
+Or manually:
+
+```bash
+cd ~/.terminal-mcp
 git pull
 npm install
 npm run build
-```
-
-### Via npm (After Publishing)
-
-```bash
-npm update -g terminal-mcp
 ```

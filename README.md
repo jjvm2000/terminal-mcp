@@ -1,17 +1,11 @@
 # Terminal MCP
 
-A headless terminal emulator exposed via MCP (Model Context Protocol), enabling AI assistants like Claude Code to interact with terminal applications programmatically.
+A headless terminal emulator exposed via MCP (Model Context Protocol), enabling AI assistants to interact with terminal applications programmatically.
 
 ## Quick Install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/elleryfamilia/terminal-mcp/main/install.sh | bash
-```
-
-Or with npm:
-
-```bash
-npm install -g terminal-mcp
 ```
 
 ## Features
@@ -33,16 +27,15 @@ npm run build
 
 ## Usage
 
-### Claude Code Configuration
+### MCP Configuration
 
-Add to your Claude Code MCP settings:
+Add to your MCP client settings:
 
 ```json
 {
   "mcpServers": {
     "terminal": {
-      "command": "node",
-      "args": ["/path/to/terminal-mcp/dist/index.js"]
+      "command": "terminal-mcp"
     }
   }
 }
@@ -54,13 +47,8 @@ With custom options:
 {
   "mcpServers": {
     "terminal": {
-      "command": "node",
-      "args": [
-        "/path/to/terminal-mcp/dist/index.js",
-        "--cols", "100",
-        "--rows", "30",
-        "--shell", "/bin/zsh"
-      ]
+      "command": "terminal-mcp",
+      "args": ["--cols", "100", "--rows", "30", "--shell", "/bin/zsh"]
     }
   }
 }
@@ -146,7 +134,7 @@ Clear the terminal screen and scrollback buffer.
 ## Architecture
 
 ```
-Claude Code
+MCP Client (Claude Code, etc.)
     │ STDIO (JSON-RPC)
     ▼
 Terminal MCP Server (Node.js)
