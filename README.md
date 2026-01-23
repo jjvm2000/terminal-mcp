@@ -29,13 +29,10 @@ curl -fsSL https://raw.githubusercontent.com/elleryfamilia/terminal-mcp/main/ins
 - **MCP Protocol**: Implements Model Context Protocol for AI assistant integration
 - **Simple API**: Four intuitive tools for complete terminal control
 
-## Installation
+## Building from Source
 
 ```bash
-# Install dependencies
 npm install
-
-# Build
 npm run build
 ```
 
@@ -164,32 +161,6 @@ Terminal MCP Server (Node.js)
 ```
 
 ## Development
-
-### Project Structure
-
-```
-terminal-mcp/
-├── src/
-│   ├── index.ts              # Entry point with CLI
-│   ├── server.ts             # MCP server setup
-│   ├── terminal/
-│   │   ├── index.ts          # Exports
-│   │   ├── session.ts        # PTY + xterm integration
-│   │   └── manager.ts        # Session lifecycle
-│   ├── tools/
-│   │   ├── index.ts          # Tool registry
-│   │   ├── type.ts           # type tool
-│   │   ├── sendKey.ts        # sendKey tool
-│   │   ├── getContent.ts     # getContent tool
-│   │   └── screenshot.ts     # takeScreenshot tool
-│   └── utils/
-│       └── keys.ts           # Key code mappings
-├── docs/                     # Documentation
-├── package.json
-└── tsconfig.json
-```
-
-### Building
 
 ```bash
 npm run build    # Compile TypeScript
