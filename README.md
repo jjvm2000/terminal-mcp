@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="Terminal MCP">
+  <img src="logo.png" alt="Terminal MCP" width="600">
 </p>
 
 <p align="center">
