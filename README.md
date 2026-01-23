@@ -17,7 +17,7 @@ curl -fsSL https://raw.githubusercontent.com/elleryfamilia/terminal-mcp/main/ins
 - **Full Terminal Emulation**: Uses xterm.js headless for accurate VT100/ANSI emulation
 - **Cross-Platform PTY**: Native pseudo-terminal support via node-pty (macOS, Linux, Windows)
 - **MCP Protocol**: Implements Model Context Protocol for AI assistant integration
-- **Simple API**: Five intuitive tools for complete terminal control
+- **Simple API**: Four intuitive tools for complete terminal control
 
 ## Installation
 
@@ -125,16 +125,6 @@ Capture the terminal state with cursor position and dimensions.
 }
 ```
 
-### `clear`
-Clear the terminal screen and scrollback buffer.
-
-```json
-{
-  "name": "clear",
-  "arguments": {}
-}
-```
-
 ## Architecture
 
 ```
@@ -181,8 +171,7 @@ terminal-mcp/
 │   │   ├── type.ts           # type tool
 │   │   ├── sendKey.ts        # sendKey tool
 │   │   ├── getContent.ts     # getContent tool
-│   │   ├── screenshot.ts     # takeScreenshot tool
-│   │   └── clear.ts          # clear tool
+│   │   └── screenshot.ts     # takeScreenshot tool
 │   └── utils/
 │       └── keys.ts           # Key code mappings
 ├── docs/                     # Documentation
