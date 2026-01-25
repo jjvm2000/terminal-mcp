@@ -9,7 +9,7 @@ export type TypeArgs = z.infer<typeof typeSchema>;
 
 export const typeTool = {
   name: "type",
-  description: "Send text input to the terminal. Text is written exactly as provided - no Enter key is sent automatically. To execute a command, use type() followed by sendKey('Enter'). Example workflow: type('ls -la') → sendKey('Enter') → getContent()",
+  description: "Send text input to the terminal. Text is written exactly as provided - no Enter key is sent automatically. To execute a command, use type() followed by sendKey('Enter'). Example workflow: type('ls -la') → sendKey('Enter') → getContent(). IMPORTANT: In zsh, avoid '!' inside double quotes as it triggers history expansion - use single quotes instead (e.g., echo 'Hello!' not echo \"Hello!\").",
   inputSchema: {
     type: "object" as const,
     properties: {
