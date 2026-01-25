@@ -2,6 +2,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { TerminalManager } from "./terminal/index.js";
+import { VERSION } from "./utils/version.js";
 import { registerTools } from "./tools/index.js";
 import { registerPrompts } from "./prompts/index.js";
 
@@ -18,7 +19,7 @@ export function createServerWithManager(manager: TerminalManager): Server {
   const server = new Server(
     {
       name: "terminal-mcp",
-      version: "0.2.0",
+      version: VERSION,
     },
     {
       capabilities: {

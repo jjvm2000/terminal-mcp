@@ -1,6 +1,7 @@
 import * as net from "net";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { VERSION } from "./utils/version.js";
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
@@ -29,7 +30,7 @@ export async function startMcpClientMode(socketPath: string): Promise<void> {
   const server = new Server(
     {
       name: "terminal-mcp",
-      version: "0.2.0",
+      version: VERSION,
     },
     {
       capabilities: {
