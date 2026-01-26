@@ -54,7 +54,7 @@ export async function handleStopRecording(
   }
 
   // Finalize with exit code 0 (explicit stop means success)
-  const metadata = await recordingManager.finalizeRecording(parsed.recordingId, 0);
+  const metadata = await recordingManager.finalizeRecording(parsed.recordingId, 0, 'explicit');
 
   if (!metadata) {
     return {
@@ -75,6 +75,7 @@ export async function handleStopRecording(
     bytesWritten: metadata.bytesWritten,
     saved: metadata.saved,
     mode: metadata.mode,
+    stopReason: metadata.stopReason,
   };
 
   return {

@@ -2,6 +2,24 @@ import * as path from "path";
 import * as os from "os";
 
 /**
+ * Get the default recording directory.
+ * Uses XDG_STATE_HOME or falls back to ~/.local/state/terminal-mcp/recordings.
+ * Can be overridden with TERMINAL_MCP_RECORD_DIR environment variable.
+ */
+export function getDefaultRecordDir(): string {
+  // Check env var override first
+  if (process.env.TERMINAL_MCP_RECORD_DIR) {
+    return process.env.TERMINAL_MCP_RECORD_DIR;
+  }
+
+  // Use XDG_STATE_HOME or fallback
+  const stateHome = process.env.XDG_STATE_HOME
+    || path.join(os.homedir(), '.local', 'state');
+
+  return path.join(stateHome, 'terminal-mcp', 'recordings');
+}
+
+/**
  * Get the default IPC path for cross-platform communication.
  * Uses named pipes on Windows, Unix sockets elsewhere.
  */

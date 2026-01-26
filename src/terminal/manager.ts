@@ -1,10 +1,15 @@
 import { TerminalSession, TerminalSessionOptions, ScreenshotResult } from "./session.js";
-import { RecordingManager, RecordingMode, RecordingFormat } from "../recording/index.js";
+import { RecordingManager } from "../recording/index.js";
+import type { RecordingMode, RecordingFormat, RecordingMetadata } from "../recording/index.js";
+import { getDefaultRecordDir } from "../utils/platform.js";
 
 export interface TerminalManagerOptions extends TerminalSessionOptions {
   record?: RecordingMode;
   recordDir?: string;
   recordFormat?: RecordingFormat;
+  idleTimeLimit?: number;
+  maxDuration?: number;
+  inactivityTimeout?: number;
 }
 
 /**
@@ -21,8 +26,11 @@ export class TerminalManager {
     this.options = options;
     this.recordingManager = new RecordingManager({
       mode: options.record ?? 'off',
-      outputDir: options.recordDir ?? process.cwd(),
+      outputDir: options.recordDir ?? getDefaultRecordDir(),
       format: options.recordFormat ?? 'v2',
+      idleTimeLimit: options.idleTimeLimit ?? 2,
+      maxDuration: options.maxDuration ?? 3600,
+      inactivityTimeout: options.inactivityTimeout ?? 600,
     });
   }
 
@@ -36,7 +44,6 @@ export class TerminalManager {
       // Wire up recording hooks
       this.session.onData((data) => this.recordingManager.recordOutputToAll(data));
       this.session.onResize((cols, rows) => this.recordingManager.recordResizeToAll(cols, rows));
-      this.session.onExit((code) => this.recordingManager.finalizeAll(code));
 
       // Start auto-recording if CLI mode !== 'off'
       if (this.options.record && this.options.record !== 'off') {
@@ -56,8 +63,11 @@ export class TerminalManager {
 
     const recorder = this.recordingManager.createRecording({
       mode: this.options.record,
-      outputDir: this.options.recordDir ?? process.cwd(),
+      outputDir: this.options.recordDir ?? getDefaultRecordDir(),
       format: this.options.recordFormat ?? 'v2',
+      idleTimeLimit: this.options.idleTimeLimit ?? 2,
+      maxDuration: this.options.maxDuration ?? 3600,
+      inactivityTimeout: this.options.inactivityTimeout ?? 600,
     });
 
     const dimensions = this.session?.getDimensions() ?? { cols: 120, rows: 40 };
@@ -74,6 +84,14 @@ export class TerminalManager {
    */
   getRecordingManager(): RecordingManager {
     return this.recordingManager;
+  }
+
+  /**
+   * Finalize all recordings and return their metadata
+   * Called by the caller when the session exits
+   */
+  async finalizeRecordings(exitCode: number): Promise<RecordingMetadata[]> {
+    return this.recordingManager.finalizeAll(exitCode);
   }
 
   /**

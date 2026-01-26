@@ -4,12 +4,26 @@ Terminal MCP can be configured via command-line arguments when starting the serv
 
 ## Command-Line Options
 
+### General Options
+
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `--cols` | number | 120 | Terminal width in columns |
 | `--rows` | number | 40 | Terminal height in rows |
 | `--shell` | string | `$SHELL` or `bash` | Shell executable to use |
+| `--version`, `-v` | flag | - | Show version number |
 | `--help`, `-h` | flag | - | Show help message |
+
+### Recording Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `--record [mode]` | string | `off` | Recording mode: `always`, `on-failure`, `off` |
+| `--record-dir` | string | XDG default | Output directory for recordings |
+| `--record-format` | string | `v2` | Recording format (asciicast v2) |
+| `--idle-time-limit` | number | `2` | Max seconds between events in recording |
+
+See [Recording Documentation](recording.md) for full details on recording features.
 
 ## Usage
 
@@ -17,16 +31,35 @@ Terminal MCP can be configured via command-line arguments when starting the serv
 
 ```bash
 # Use defaults (120x40, system shell)
-node dist/index.js
+terminal-mcp
 
 # Custom dimensions
-node dist/index.js --cols 80 --rows 24
+terminal-mcp --cols 80 --rows 24
 
 # Specific shell
-node dist/index.js --shell /bin/zsh
+terminal-mcp --shell /bin/zsh
 
 # Combined options
-node dist/index.js --cols 100 --rows 30 --shell /usr/local/bin/fish
+terminal-mcp --cols 100 --rows 30 --shell /usr/local/bin/fish
+
+# Check version
+terminal-mcp --version
+```
+
+### Recording Usage
+
+```bash
+# Record with defaults (saves to ~/.local/state/terminal-mcp/recordings/)
+terminal-mcp --record
+
+# Record to specific directory
+terminal-mcp --record --record-dir=./my-recordings
+
+# Record only on failure
+terminal-mcp --record=on-failure
+
+# Custom idle time limit (5 seconds max between events)
+terminal-mcp --record --idle-time-limit=5
 ```
 
 ### Help
@@ -173,6 +206,17 @@ The terminal session inherits the environment from the parent process. Key varia
 | `PATH` | Determines available commands |
 | `HOME` | Home directory for shell |
 | `USER` | Current username |
+| `TERMINAL_MCP_RECORD_DIR` | Default recording output directory |
+| `XDG_STATE_HOME` | XDG base directory for state files (fallback for recordings) |
+
+### Recording Directory Resolution
+
+The default recording directory is resolved in this order:
+
+1. `--record-dir` command-line argument (if provided)
+2. `TERMINAL_MCP_RECORD_DIR` environment variable (if set)
+3. `$XDG_STATE_HOME/terminal-mcp/recordings` (if XDG_STATE_HOME is set)
+4. `~/.local/state/terminal-mcp/recordings` (fallback)
 
 ### Customizing Environment
 

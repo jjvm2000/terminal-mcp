@@ -6,6 +6,7 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { toolDefinitions } from "./tools/definitions.js";
 
 interface SocketRequest {
   id: number;
@@ -106,73 +107,9 @@ export async function startMcpClientMode(socketPath: string): Promise<void> {
     });
   }
 
-  // Define tools that proxy to the interactive terminal
-  const tools = [
-    {
-      name: "type",
-      description: "Type text into the terminal",
-      inputSchema: {
-        type: "object" as const,
-        properties: {
-          text: {
-            type: "string",
-            description: "The text to type",
-          },
-        },
-        required: ["text"],
-      },
-    },
-    {
-      name: "sendKey",
-      description:
-        "Send a special key to the terminal (e.g., enter, tab, ctrl+c)",
-      inputSchema: {
-        type: "object" as const,
-        properties: {
-          key: {
-            type: "string",
-            description:
-              "The key to send (e.g., enter, tab, escape, up, down, left, right, ctrl+c, ctrl+d)",
-          },
-        },
-        required: ["key"],
-      },
-    },
-    {
-      name: "getContent",
-      description: "Get the current content of the terminal buffer",
-      inputSchema: {
-        type: "object" as const,
-        properties: {
-          visibleOnly: {
-            type: "boolean",
-            description: "If true, only return visible content (default: false)",
-          },
-        },
-      },
-    },
-    {
-      name: "takeScreenshot",
-      description:
-        "Take a screenshot of the terminal showing current screen and cursor position",
-      inputSchema: {
-        type: "object" as const,
-        properties: {},
-      },
-    },
-    {
-      name: "clear",
-      description: "Clear the terminal screen",
-      inputSchema: {
-        type: "object" as const,
-        properties: {},
-      },
-    },
-  ];
-
   // Register list tools handler
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools,
+    tools: toolDefinitions,
   }));
 
   // Register call tool handler - proxy to socket

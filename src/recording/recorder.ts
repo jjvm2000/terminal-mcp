@@ -1,12 +1,13 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import {
+import type {
   RecordingMode,
   RecordingFormat,
   AsciicastHeader,
   AsciicastEvent,
   RecordingMetadata,
+  StopReason,
 } from "./types.js";
 
 /**
@@ -30,17 +31,36 @@ export class Recorder {
   private startTime: number = 0;
   private bytesWritten: number = 0;
   private finalized: boolean = false;
+  private idleTimeLimit: number;
+  private lastEventTime: number = 0;
+  private adjustedElapsed: number = 0;
+
+  // Timeout settings
+  private maxDuration: number;
+  private inactivityTimeout: number;
+  private maxDurationTimer: ReturnType<typeof setTimeout> | null = null;
+  private inactivityTimer: ReturnType<typeof setTimeout> | null = null;
+  private stopReason: StopReason = 'explicit';
+
+  // Callback for auto-finalize events
+  private onAutoFinalize?: (metadata: RecordingMetadata) => void;
 
   constructor(
     id: string,
     mode: RecordingMode,
     outputDir: string,
-    format: RecordingFormat = 'v2'
+    format: RecordingFormat = 'v2',
+    idleTimeLimit: number = 2,
+    maxDuration: number = 3600,        // 60 minutes default
+    inactivityTimeout: number = 600    // 10 minutes default
   ) {
     this.id = id;
     this.mode = mode;
     this.format = format;
     this.outputDir = outputDir;
+    this.idleTimeLimit = idleTimeLimit;
+    this.maxDuration = maxDuration;
+    this.inactivityTimeout = inactivityTimeout;
 
     // Generate temp and final paths
     const timestamp = Date.now();
@@ -79,6 +99,20 @@ export class Recorder {
     }
 
     this.writeLine(JSON.stringify(header));
+
+    // Set up max duration timer
+    if (this.maxDuration > 0) {
+      this.maxDurationTimer = setTimeout(() => {
+        this._autoFinalize('max_duration');
+      }, this.maxDuration * 1000);
+    }
+
+    // Set up initial inactivity timer
+    if (this.inactivityTimeout > 0) {
+      this.inactivityTimer = setTimeout(() => {
+        this._autoFinalize('inactivity');
+      }, this.inactivityTimeout * 1000);
+    }
   }
 
   /**
@@ -87,6 +121,14 @@ export class Recorder {
   recordOutput(data: string): void {
     if (!this.writeStream || this.finalized) {
       return;
+    }
+
+    // Reset inactivity timer on each output event
+    if (this.inactivityTimeout > 0 && this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+      this.inactivityTimer = setTimeout(() => {
+        this._autoFinalize('inactivity');
+      }, this.inactivityTimeout * 1000);
     }
 
     const elapsed = this.getElapsedSeconds();
@@ -114,7 +156,7 @@ export class Recorder {
    *
    * Returns metadata about the recording
    */
-  async finalize(exitCode: number | null): Promise<RecordingMetadata> {
+  async finalize(exitCode: number | null, stopReason?: StopReason): Promise<RecordingMetadata> {
     if (this.finalized) {
       throw new Error("Recording already finalized");
     }
@@ -122,6 +164,12 @@ export class Recorder {
     this.finalized = true;
     const endTime = Date.now();
     const durationMs = endTime - this.startTime;
+
+    // Clear any active timers
+    this.clearTimers();
+
+    // Use provided stopReason or the internally tracked one
+    const finalStopReason = stopReason ?? this.stopReason;
 
     // Close the write stream
     if (this.writeStream) {
@@ -162,6 +210,7 @@ export class Recorder {
         startTime: this.startTime,
         endTime,
         bytesWritten: this.bytesWritten,
+        stopReason: finalStopReason,
       };
       fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2));
     } else {
@@ -184,6 +233,7 @@ export class Recorder {
       exitCode,
       mode: this.mode,
       saved,
+      stopReason: finalStopReason,
     };
   }
 
@@ -209,7 +259,29 @@ export class Recorder {
   }
 
   private getElapsedSeconds(): number {
-    return (Date.now() - this.startTime) / 1000;
+    const now = Date.now();
+
+    if (this.lastEventTime === 0) {
+      // First event - just record the time
+      this.lastEventTime = now;
+      this.adjustedElapsed = (now - this.startTime) / 1000;
+      return this.adjustedElapsed;
+    }
+
+    // Calculate actual idle time since last event
+    const idleTime = (now - this.lastEventTime) / 1000;
+
+    // Cap idle time if limit is set and exceeded
+    if (this.idleTimeLimit > 0 && idleTime > this.idleTimeLimit) {
+      // Only add the capped idle time to our adjusted elapsed
+      this.adjustedElapsed += this.idleTimeLimit;
+    } else {
+      // Add actual idle time
+      this.adjustedElapsed += idleTime;
+    }
+
+    this.lastEventTime = now;
+    return this.adjustedElapsed;
   }
 
   private writeLine(line: string): void {
@@ -218,5 +290,64 @@ export class Recorder {
       this.writeStream.write(data);
       this.bytesWritten += Buffer.byteLength(data, 'utf8');
     }
+  }
+
+  /**
+   * Clear all active timers
+   */
+  private clearTimers(): void {
+    if (this.maxDurationTimer) {
+      clearTimeout(this.maxDurationTimer);
+      this.maxDurationTimer = null;
+    }
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+      this.inactivityTimer = null;
+    }
+  }
+
+  /**
+   * Auto-finalize the recording due to timeout
+   * Called internally when max duration or inactivity timeout is reached
+   */
+  private async _autoFinalize(reason: StopReason): Promise<void> {
+    if (this.finalized) {
+      return;
+    }
+
+    this.stopReason = reason;
+    const metadata = await this.finalize(null, reason);
+
+    // Notify callback if registered
+    if (this.onAutoFinalize) {
+      this.onAutoFinalize(metadata);
+    }
+  }
+
+  /**
+   * Set callback for auto-finalize events (timeout triggered)
+   */
+  setOnAutoFinalize(callback: (metadata: RecordingMetadata) => void): void {
+    this.onAutoFinalize = callback;
+  }
+
+  /**
+   * Get timeout configuration and remaining time
+   */
+  getTimeoutInfo(): {
+    maxDuration: number;
+    inactivityTimeout: number;
+    elapsedSeconds: number;
+    remainingMaxDuration: number;
+  } {
+    const elapsedSeconds = this.startTime > 0 ? (Date.now() - this.startTime) / 1000 : 0;
+    const remainingMaxDuration = this.maxDuration > 0 ? Math.max(0, this.maxDuration - elapsedSeconds) : -1;
+
+    return {
+      maxDuration: this.maxDuration,
+      inactivityTimeout: this.inactivityTimeout,
+      elapsedSeconds,
+      remainingMaxDuration,
+    };
   }
 }

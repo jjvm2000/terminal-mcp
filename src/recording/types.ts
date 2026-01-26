@@ -18,6 +18,9 @@ export interface RecordingOptions {
   mode: RecordingMode;
   format: RecordingFormat;
   outputDir: string;
+  idleTimeLimit?: number;      // Max seconds between events (default: 2)
+  maxDuration?: number;        // Max recording duration in seconds (default: 3600 = 60 min)
+  inactivityTimeout?: number;  // Stop after N seconds of no output (default: 600 = 10 min)
 }
 
 /**
@@ -45,6 +48,11 @@ export type AsciicastResizeEvent = [number, 'r', string];
 export type AsciicastEvent = AsciicastOutputEvent | AsciicastResizeEvent;
 
 /**
+ * Reason why recording stopped
+ */
+export type StopReason = 'explicit' | 'session_exit' | 'max_duration' | 'inactivity';
+
+/**
  * Metadata returned after finalizing a recording
  */
 export interface RecordingMetadata {
@@ -58,4 +66,5 @@ export interface RecordingMetadata {
   exitCode: number | null;
   mode: RecordingMode;
   saved: boolean;
+  stopReason?: StopReason;
 }

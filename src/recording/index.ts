@@ -1,6 +1,6 @@
 export { Recorder } from "./recorder.js";
 export { RecordingManager } from "./manager.js";
-export {
+export type {
   RecordingMode,
   RecordingFormat,
   RecordingOptions,
@@ -9,4 +9,5 @@ export {
   AsciicastOutputEvent,
   AsciicastResizeEvent,
   RecordingMetadata,
+  StopReason,
 } from "./types.js";

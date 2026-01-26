@@ -5,7 +5,9 @@ import {
   RecordingFormat,
   RecordingOptions,
   RecordingMetadata,
+  StopReason,
 } from "./types.js";
+import { getDefaultRecordDir } from "../utils/platform.js";
 
 /**
  * RecordingManager tracks and manages multiple recordings
@@ -18,7 +20,10 @@ export class RecordingManager {
     this.defaultOptions = {
       mode: options?.mode ?? 'off',
       format: options?.format ?? 'v2',
-      outputDir: options?.outputDir ?? process.cwd(),
+      outputDir: options?.outputDir ?? getDefaultRecordDir(),
+      idleTimeLimit: options?.idleTimeLimit ?? 2,
+      maxDuration: options?.maxDuration ?? 3600,        // 60 minutes default
+      inactivityTimeout: options?.inactivityTimeout ?? 600,  // 10 minutes default
     };
   }
 
@@ -37,7 +42,10 @@ export class RecordingManager {
       id,
       mergedOptions.mode,
       mergedOptions.outputDir,
-      mergedOptions.format
+      mergedOptions.format,
+      mergedOptions.idleTimeLimit,
+      mergedOptions.maxDuration,
+      mergedOptions.inactivityTimeout
     );
 
     this.recordings.set(id, recorder);
@@ -93,13 +101,13 @@ export class RecordingManager {
   /**
    * Finalize a specific recording
    */
-  async finalizeRecording(id: string, exitCode: number | null): Promise<RecordingMetadata | undefined> {
+  async finalizeRecording(id: string, exitCode: number | null, stopReason?: StopReason): Promise<RecordingMetadata | undefined> {
     const recorder = this.recordings.get(id);
     if (!recorder) {
       return undefined;
     }
 
-    const metadata = await recorder.finalize(exitCode);
+    const metadata = await recorder.finalize(exitCode, stopReason);
     this.recordings.delete(id);
     return metadata;
   }
@@ -108,12 +116,12 @@ export class RecordingManager {
    * Finalize all active recordings
    * Returns array of metadata for all finalized recordings
    */
-  async finalizeAll(exitCode: number | null): Promise<RecordingMetadata[]> {
+  async finalizeAll(exitCode: number | null, stopReason: StopReason = 'session_exit'): Promise<RecordingMetadata[]> {
     const results: RecordingMetadata[] = [];
 
     for (const [id, recorder] of this.recordings) {
       if (recorder.isActive()) {
-        const metadata = await recorder.finalize(exitCode);
+        const metadata = await recorder.finalize(exitCode, stopReason);
         results.push(metadata);
       }
       this.recordings.delete(id);
