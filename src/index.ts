@@ -126,13 +126,6 @@ MCP Client Mode (add to your MCP client config):
   }
 }
 
-// Check for unsupported sandbox on Windows
-if (options.sandbox && process.platform === "win32") {
-  console.error("[terminal-mcp] Error: Sandbox mode is not supported on Windows.");
-  console.error("[terminal-mcp] Please run without the --sandbox or --sandbox-config flags.");
-  process.exit(1);
-}
-
 async function main() {
   const socketPath = options.socket || DEFAULT_SOCKET_PATH;
   const isInteractive = process.stdin.isTTY;
@@ -159,6 +152,34 @@ async function startInteractiveMode(socketPath: string): Promise<void> {
   if (options.sandbox) {
     sandboxController = new SandboxController();
 
+    // Check platform support and dependencies BEFORE showing the modal
+    if (!sandboxController.isSupported()) {
+      const platform = sandboxController.getPlatform();
+      if (platform === "win32") {
+        console.error("[terminal-mcp] Error: Sandbox mode is not supported on Windows.");
+      } else {
+        console.error(`[terminal-mcp] Error: Sandbox mode is not supported on platform '${platform}'.`);
+      }
+      console.error("[terminal-mcp] Please run without the --sandbox flag.");
+      process.exit(1);
+    }
+
+    // Check Linux-specific dependencies
+    const depCheck = sandboxController.checkLinuxDependencies();
+    if (!depCheck.supported) {
+      console.error(`[terminal-mcp] Error: Sandbox dependencies not available.`);
+      console.error(`[terminal-mcp] Missing: ${depCheck.message}`);
+      console.error("");
+      console.error("To install on Arch Linux:");
+      console.error("  sudo pacman -S bubblewrap socat");
+      console.error("");
+      console.error("To install on Debian/Ubuntu:");
+      console.error("  sudo apt install bubblewrap socat");
+      console.error("");
+      console.error("Or run without the --sandbox flag.");
+      process.exit(1);
+    }
+
     // Determine permissions
     let permissions: SandboxPermissions;
     if (options.sandboxConfig) {
@@ -171,7 +192,15 @@ async function startInteractiveMode(socketPath: string): Promise<void> {
       }
     } else {
       // Interactive permission prompt
-      permissions = await promptForPermissions();
+      try {
+        permissions = await promptForPermissions();
+      } catch (error) {
+        if (error instanceof Error && error.message === "cancelled") {
+          console.log("[terminal-mcp] Cancelled.");
+          process.exit(0);
+        }
+        throw error;
+      }
     }
 
     // Initialize sandbox
@@ -181,9 +210,10 @@ async function startInteractiveMode(socketPath: string): Promise<void> {
     if (status.enabled) {
       console.log(`[terminal-mcp] Sandbox enabled (${status.platform})`);
     } else {
-      console.warn(`[terminal-mcp] Sandbox unavailable: ${status.reason}`);
-      console.warn("[terminal-mcp] Continuing without sandbox...");
-      sandboxController = undefined;
+      // If we get here, something unexpected failed during initialization
+      console.error(`[terminal-mcp] Error: Failed to initialize sandbox: ${status.reason}`);
+      console.error("[terminal-mcp] Please run without the --sandbox flag or fix the issue above.");
+      process.exit(1);
     }
   }
 

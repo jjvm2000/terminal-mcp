@@ -5,8 +5,8 @@ const ESC = "\x1b";
 const CURSOR_HIDE = `${ESC}[?25l`;
 const CURSOR_SHOW = `${ESC}[?25h`;
 const CLEAR_TO_END = `${ESC}[J`;
-const SAVE_CURSOR = `${ESC}7`;
-const RESTORE_CURSOR = `${ESC}8`;
+const CURSOR_UP = (n: number) => `${ESC}[${n}A`;
+const CURSOR_TO_COL_1 = `${ESC}[1G`;
 
 // Colors
 const BOLD = `${ESC}[1m`;
@@ -88,11 +88,14 @@ export async function promptForPermissions(): Promise<SandboxPermissions> {
   const getSelectableIndices = () =>
     items.map((item, i) => (isSelectable(item) ? i : -1)).filter((i) => i >= 0);
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     process.stdin.setRawMode(true);
     process.stdin.resume();
     process.stdin.setEncoding("utf8");
-    process.stdout.write(SAVE_CURSOR + CURSOR_HIDE);
+    process.stdout.write(CURSOR_HIDE);
+
+    // Track lines written for proper redraw
+    let lastOutputLineCount = 0;
 
     const getSelectedIndex = () => {
       const indices = getSelectableIndices();
@@ -139,7 +142,11 @@ export async function promptForPermissions(): Promise<SandboxPermissions> {
     };
 
     const render = () => {
-      process.stdout.write(RESTORE_CURSOR + SAVE_CURSOR + CLEAR_TO_END);
+      // Move cursor up to overwrite previous output
+      if (lastOutputLineCount > 0) {
+        process.stdout.write(CURSOR_UP(lastOutputLineCount) + CURSOR_TO_COL_1);
+      }
+      process.stdout.write(CLEAR_TO_END);
 
       const lines: string[] = [];
       lines.push("");
@@ -223,7 +230,9 @@ export async function promptForPermissions(): Promise<SandboxPermissions> {
       }
 
       const output = drawBox(lines, inputMode ? "Add Custom Path" : "Sandbox Permissions", boxWidth);
-      process.stdout.write("\n" + output + "\n");
+      const outputWithNewlines = "\n" + output + "\n";
+      lastOutputLineCount = outputWithNewlines.split("\n").length - 1;
+      process.stdout.write(outputWithNewlines);
     };
 
     const drawBox = (lines: string[], title: string, width: number): string => {
@@ -255,7 +264,11 @@ export async function promptForPermissions(): Promise<SandboxPermissions> {
       process.stdin.setRawMode(false);
       process.stdin.pause();
       process.stdin.removeAllListeners("data");
-      process.stdout.write(RESTORE_CURSOR + CLEAR_TO_END + CURSOR_SHOW);
+      // Clear the modal output
+      if (lastOutputLineCount > 0) {
+        process.stdout.write(CURSOR_UP(lastOutputLineCount) + CURSOR_TO_COL_1 + CLEAR_TO_END);
+      }
+      process.stdout.write(CURSOR_SHOW);
     };
 
     const addCustomPath = () => {
@@ -371,8 +384,7 @@ export async function promptForPermissions(): Promise<SandboxPermissions> {
       } else if (key === "q" || key === "\x03") {
         // q or Ctrl+C - quit
         cleanup();
-        console.log(`${YELLOW}Cancelled. Using defaults.${RESET}\n`);
-        resolve(getDefaultFromItems(createDefaultItems()));
+        reject(new Error("cancelled"));
         return;
       } else if (key === "d" || key === "\x1b[3~") {
         // d or Delete - remove custom item
