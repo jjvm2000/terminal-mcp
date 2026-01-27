@@ -3,6 +3,8 @@ import {
   type SandboxRuntimeConfig,
 } from "@anthropic-ai/sandbox-runtime";
 import { SandboxPermissions, expandPath } from "./config.js";
+import * as fs from "fs";
+import * as path from "path";
 
 export type SandboxPlatform = "darwin" | "linux" | "win32" | "unsupported";
 
@@ -60,6 +62,31 @@ export class SandboxController {
     const supported = SandboxManager.checkDependencies();
     const message = supported ? undefined : "bubblewrap (bwrap) or socat not installed";
     return { supported, message };
+  }
+
+  /**
+   * Clean up sandbox artifacts left by previous runs.
+   *
+   * Workaround for sandbox-runtime bug: when sandbox binds /dev/null to .claude,
+   * it leaves a 0-byte file artifact. On the next run, sandbox-runtime tries to
+   * create .claude/commands inside this file, which fails with "Not a directory".
+   *
+   * This removes the .claude artifact if it's a 0-byte file (not a real directory).
+   */
+  cleanupSandboxArtifacts(): void {
+    const claudePath = path.join(process.cwd(), ".claude");
+    try {
+      const stat = fs.statSync(claudePath);
+      // If .claude is a file (not directory) and 0 bytes, it's a sandbox artifact
+      if (stat.isFile() && stat.size === 0) {
+        fs.unlinkSync(claudePath);
+        if (process.env.DEBUG_SANDBOX) {
+          console.error("[sandbox-debug] Cleaned up .claude artifact (0-byte file from previous sandbox run)");
+        }
+      }
+    } catch {
+      // File doesn't exist or can't be accessed - that's fine
+    }
   }
 
   /**
@@ -138,6 +165,10 @@ export class SandboxController {
         };
       }
     }
+
+    // Clean up any sandbox artifacts from previous runs
+    // This works around a sandbox-runtime bug where .claude becomes a 0-byte file
+    this.cleanupSandboxArtifacts();
 
     try {
       const config = this.toSandboxConfig(permissions);
