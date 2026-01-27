@@ -126,6 +126,13 @@ MCP Client Mode (add to your MCP client config):
   }
 }
 
+// Check for unsupported sandbox on Windows
+if (options.sandbox && process.platform === "win32") {
+  console.error("[terminal-mcp] Error: Sandbox mode is not supported on Windows.");
+  console.error("[terminal-mcp] Please run without the --sandbox or --sandbox-config flags.");
+  process.exit(1);
+}
+
 async function main() {
   const socketPath = options.socket || DEFAULT_SOCKET_PATH;
   const isInteractive = process.stdin.isTTY;
