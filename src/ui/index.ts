@@ -1,4 +1,5 @@
 import { VERSION } from "../utils/version.js";
+import { getToolNames } from "../tools/definitions.js";
 
 // Custom color #31cae1 as 24-bit ANSI escape (RGB: 49, 202, 225)
 const BRAND_COLOR = "\x1b[38;2;49;202;225m";
@@ -57,6 +58,14 @@ export function getBanner(options: BannerOptions): string {
     return YELLOW_COLOR + "│ " + color + line + " ".repeat(rightPad) + " " + YELLOW_COLOR + "│";
   });
 
+  // Generate tool lines - first line has "Tools:" label, rest are indented
+  const toolNames = getToolNames();
+  const toolLines = toolNames.map((tool, index) => {
+    const prefix = index === 0 ? "  Tools: " : "         ";
+    const bullet = "• ";
+    return `${YELLOW_COLOR}│${WHITE_COLOR}${prefix}${bullet}${padRight(tool, boxWidth - prefix.length - 3)}${YELLOW_COLOR}│`;
+  });
+
   const mcpConfig = `{
   "mcpServers": {
     "terminal": {
@@ -76,7 +85,9 @@ ${centeredLogo.join("\n")}
 ${YELLOW_COLOR}├${horizontalLine}┤
 ${YELLOW_COLOR}│${WHITE_COLOR}  Socket: ${padRight(options.socketPath, boxWidth - 11)}${YELLOW_COLOR}│
 ${YELLOW_COLOR}│${WHITE_COLOR}  Terminal: ${padRight(`${options.cols}x${options.rows}`, 12)}Shell: ${padRight(options.shell, boxWidth - 30)}${YELLOW_COLOR}│
-${sandboxLine}${YELLOW_COLOR}│${WHITE_COLOR}  Tools: type, sendKey, getContent, takeScreenshot, clear${" ".repeat(boxWidth - 58)}${YELLOW_COLOR}│
+${sandboxLine}${YELLOW_COLOR}├${horizontalLine}┤
+${toolLines.join("\n")}
+${YELLOW_COLOR}├${horizontalLine}┤
 ${YELLOW_COLOR}│${WHITE_COLOR}${" ".repeat(boxWidth - 7)}v${VERSION} ${YELLOW_COLOR}│
 ${YELLOW_COLOR}╰${horizontalLine}╯${RESET}
 

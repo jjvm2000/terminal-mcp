@@ -1,6 +1,6 @@
 # Tools Reference
 
-Terminal MCP exposes five MCP tools for interacting with the terminal. This document provides complete API documentation for each tool.
+Terminal MCP exposes seven MCP tools for interacting with the terminal. This document provides complete API documentation for each tool.
 
 ## Overview
 
@@ -11,6 +11,8 @@ Terminal MCP exposes five MCP tools for interacting with the terminal. This docu
 | [`getContent`](#getcontent) | Retrieve terminal buffer content |
 | [`takeScreenshot`](#takescreenshot) | Capture terminal state with metadata |
 | [`clear`](#clear) | Clear the terminal screen |
+| [`startRecording`](#startrecording) | Start recording terminal output |
+| [`stopRecording`](#stoprecording) | Stop recording and save file |
 
 ---
 
@@ -356,6 +358,165 @@ None.
 
 ---
 
+## startRecording
+
+Start recording terminal output to an asciicast v2 file. Only one recording can be active at a time.
+
+### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `format` | string | No | `v2` | Recording format (asciicast v2) |
+| `mode` | string | No | `always` | `always` or `on-failure` |
+| `outputDir` | string | No | XDG default | Directory to save recording |
+| `idleTimeLimit` | number | No | `2` | Max seconds between events |
+
+### Returns
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"recordingId\": \"63f64b587bd8817a\",\n  \"path\": \"/Users/you/.local/state/terminal-mcp/recordings/terminal-1769449938208-63f64b587bd8817a.cast\",\n  \"format\": \"v2\",\n  \"mode\": \"always\"\n}"
+    }
+  ]
+}
+```
+
+### Example
+
+**Request:**
+```json
+{
+  "name": "startRecording",
+  "arguments": {}
+}
+```
+
+**Response:**
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"recordingId\": \"63f64b587bd8817a\",\n  \"path\": \"/Users/you/.local/state/terminal-mcp/recordings/terminal-1769449938208-63f64b587bd8817a.cast\",\n  \"format\": \"v2\",\n  \"mode\": \"always\"\n}"
+    }
+  ]
+}
+```
+
+### Error Handling
+
+If a recording is already active:
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"error\": \"A recording is already in progress\",\n  \"activeRecordingId\": \"abc123\",\n  \"activePath\": \"/path/to/recording.cast\"\n}"
+    }
+  ],
+  "isError": true
+}
+```
+
+### Notes
+
+- Only one recording can be active at a time
+- Default output directory: `~/.local/state/terminal-mcp/recordings/`
+- Override with `TERMINAL_MCP_RECORD_DIR` environment variable
+- See [Recording Documentation](recording.md) for full details
+
+---
+
+## stopRecording
+
+Stop an active recording and finalize the asciicast file.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `recordingId` | string | Yes | The recording ID returned by `startRecording` |
+
+### Returns
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"recordingId\": \"63f64b587bd8817a\",\n  \"path\": \"/path/to/recording.cast\",\n  \"durationMs\": 62186,\n  \"bytesWritten\": 11752,\n  \"saved\": true,\n  \"mode\": \"always\"\n}"
+    }
+  ]
+}
+```
+
+### Example
+
+**Request:**
+```json
+{
+  "name": "stopRecording",
+  "arguments": {
+    "recordingId": "63f64b587bd8817a"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"recordingId\": \"63f64b587bd8817a\",\n  \"path\": \"/Users/you/.local/state/terminal-mcp/recordings/terminal-1769449938208-63f64b587bd8817a.cast\",\n  \"durationMs\": 62186,\n  \"bytesWritten\": 11752,\n  \"saved\": true,\n  \"mode\": \"always\"\n}"
+    }
+  ]
+}
+```
+
+### Error Handling
+
+If recording not found:
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Error: Recording not found: invalid-id"
+    }
+  ],
+  "isError": true
+}
+```
+
+If recording already finalized:
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Error: Recording already finalized: 63f64b587bd8817a"
+    }
+  ],
+  "isError": true
+}
+```
+
+### Notes
+
+- The recording file is written to disk when `stopRecording` is called
+- If `mode` is `on-failure`, the file is only saved if exit code is non-zero
+- A metadata file (`.meta.json`) is also created alongside the recording
+- See [Recording Documentation](recording.md) for full details
+
+---
+
 ## Error Handling
 
 All tools return errors in a consistent format:
@@ -409,4 +570,20 @@ All tools return errors in a consistent format:
 2. sendKey: {"key": "Enter"}
 3. sendKey: {"key": "Ctrl+C"}  // Interrupt
 4. getContent: {}  // Verify interrupted
+```
+
+### Recording a Session
+
+```
+1. startRecording: {}
+   → Returns recordingId: "abc123"
+
+2. type: {"text": "echo 'Demo recording'"}
+3. sendKey: {"key": "Enter"}
+4. getContent: {}
+
+5. stopRecording: {"recordingId": "abc123"}
+   → Recording saved to ~/.local/state/terminal-mcp/recordings/
+
+6. Play with: asciinema play <path-to-recording.cast>
 ```

@@ -1,11 +1,20 @@
 import { TerminalSession, TerminalSessionOptions, ScreenshotResult } from "./session.js";
 import type { SandboxController } from "../sandbox/index.js";
+import { RecordingManager } from "../recording/index.js";
+import type { RecordingMode, RecordingFormat, RecordingMetadata } from "../recording/index.js";
+import { getDefaultRecordDir } from "../utils/platform.js";
 
 /**
  * Options for creating a TerminalManager
  */
 export interface TerminalManagerOptions extends TerminalSessionOptions {
   sandboxController?: SandboxController;
+  record?: RecordingMode;
+  recordDir?: string;
+  recordFormat?: RecordingFormat;
+  idleTimeLimit?: number;
+  maxDuration?: number;
+  inactivityTimeout?: number;
 }
 
 /**
@@ -17,10 +26,20 @@ export class TerminalManager {
   private sessionPromise: Promise<TerminalSession> | null = null;
   private options: TerminalManagerOptions;
   private sandboxController?: SandboxController;
+  private recordingManager: RecordingManager;
+  private autoRecordingId: string | null = null;
 
   constructor(options: TerminalManagerOptions = {}) {
     this.options = options;
     this.sandboxController = options.sandboxController;
+    this.recordingManager = new RecordingManager({
+      mode: options.record ?? 'off',
+      outputDir: options.recordDir ?? getDefaultRecordDir(),
+      format: options.recordFormat ?? 'v2',
+      idleTimeLimit: options.idleTimeLimit ?? 2,
+      maxDuration: options.maxDuration ?? 3600,
+      inactivityTimeout: options.inactivityTimeout ?? 600,
+    });
   }
 
   /**
@@ -79,7 +98,59 @@ export class TerminalManager {
    * Call this at startup to create the session before it's needed
    */
   async initSession(): Promise<TerminalSession> {
-    return this.getSessionAsync();
+    const session = await this.getSessionAsync();
+
+    // Wire up recording hooks
+    session.onData((data) => this.recordingManager.recordOutputToAll(data));
+    session.onResize((cols, rows) => this.recordingManager.recordResizeToAll(cols, rows));
+
+    // Start auto-recording if CLI mode !== 'off'
+    if (this.options.record && this.options.record !== 'off') {
+      this.startAutoRecording();
+    }
+
+    return session;
+  }
+
+  /**
+   * Start auto-recording based on CLI options
+   */
+  private startAutoRecording(): void {
+    if (this.autoRecordingId) {
+      return; // Already recording
+    }
+
+    const recorder = this.recordingManager.createRecording({
+      mode: this.options.record,
+      outputDir: this.options.recordDir ?? getDefaultRecordDir(),
+      format: this.options.recordFormat ?? 'v2',
+      idleTimeLimit: this.options.idleTimeLimit ?? 2,
+      maxDuration: this.options.maxDuration ?? 3600,
+      inactivityTimeout: this.options.inactivityTimeout ?? 600,
+    });
+
+    const dimensions = this.session?.getDimensions() ?? { cols: 120, rows: 40 };
+    recorder.start(dimensions.cols, dimensions.rows, {
+      SHELL: this.options.shell ?? process.env.SHELL,
+      TERM: 'xterm-256color',
+    });
+
+    this.autoRecordingId = recorder.id;
+  }
+
+  /**
+   * Get the RecordingManager instance
+   */
+  getRecordingManager(): RecordingManager {
+    return this.recordingManager;
+  }
+
+  /**
+   * Finalize all recordings and return their metadata
+   * Called by the caller when the session exits
+   */
+  async finalizeRecordings(exitCode: number): Promise<RecordingMetadata[]> {
+    return this.recordingManager.finalizeAll(exitCode);
   }
 
   /**

@@ -27,7 +27,8 @@ curl -fsSL https://raw.githubusercontent.com/elleryfamilia/terminal-mcp/main/ins
 - **Full Terminal Emulation**: Uses xterm.js headless for accurate VT100/ANSI emulation
 - **Cross-Platform PTY**: Native pseudo-terminal support via node-pty (macOS, Linux, Windows)
 - **MCP Protocol**: Implements Model Context Protocol for AI assistant integration
-- **Simple API**: Four intuitive tools for complete terminal control
+- **Session Recording**: Record terminal sessions to asciicast format for playback with asciinema
+- **Simple API**: Six intuitive tools for complete terminal control
 - **Sandbox Mode**: Optional security restrictions for filesystem and network access
 
 ## Building from Source
@@ -77,7 +78,17 @@ Options:
   --shell <path>         Shell to use (default: $SHELL or bash)
   --sandbox              Enable sandbox mode (restricts filesystem/network)
   --sandbox-config <path> Load sandbox config from JSON file
+  --version, -v          Show version number
   --help, -h             Show help message
+
+Recording Options:
+  --record [mode]     Enable recording (default mode: always)
+                      Modes: always, on-failure, off
+  --record-dir <dir>  Recording output directory
+                      (default: ~/.local/state/terminal-mcp/recordings)
+  --idle-time-limit <sec>   Max idle time between events (default: 2s)
+  --max-duration <sec>      Max recording duration (default: 3600s)
+  --inactivity-timeout <sec>  Stop after no output (default: 600s)
 ```
 
 ## MCP Tools
@@ -135,6 +146,39 @@ Capture the terminal state with cursor position and dimensions.
 }
 ```
 
+### `startRecording`
+Start recording terminal output to an asciicast v2 file.
+
+```json
+{
+  "name": "startRecording",
+  "arguments": {
+    "mode": "always",
+    "idleTimeLimit": 2,
+    "maxDuration": 3600
+  }
+}
+```
+
+Options:
+- `mode`: `always` (save all) or `on-failure` (save only on non-zero exit)
+- `outputDir`: Custom output directory
+- `idleTimeLimit`: Max seconds between events (caps pauses in playback)
+- `maxDuration`: Auto-stop after N seconds
+- `inactivityTimeout`: Auto-stop after N seconds of no output
+
+### `stopRecording`
+Stop a recording and finalize the asciicast file.
+
+```json
+{
+  "name": "stopRecording",
+  "arguments": {
+    "recordingId": "abc123"
+  }
+}
+```
+
 ## Sandbox Mode
 
 Run the terminal with restricted filesystem and network access:
@@ -173,6 +217,64 @@ Platform support:
 - **Windows**: Graceful fallback (runs without sandbox)
 
 See [Sandbox Documentation](./docs/sandbox.md) for detailed configuration options.
+
+## Recording
+
+Terminal MCP can record sessions to [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/) format, compatible with [asciinema](https://asciinema.org/) for playback.
+
+### Quick Start
+
+```bash
+# Start with recording enabled
+terminal-mcp --record
+
+# Run your commands, then exit
+exit
+
+# Output shows the saved file path:
+# Recordings saved:
+#   ~/.local/state/terminal-mcp/recordings/20240115_143022.cast
+#
+# Play with: asciinema play <file>
+```
+
+### Playback
+
+Install asciinema to play back recordings:
+
+```bash
+# macOS
+brew install asciinema
+
+# Linux/pip
+pip install asciinema
+
+# Play a recording
+asciinema play ~/.local/state/terminal-mcp/recordings/20240115_143022.cast
+
+# Play at 2x speed
+asciinema play -s 2 recording.cast
+```
+
+### Recording Modes
+
+- **`always`** (default): Save every recording
+- **`on-failure`**: Only save if the session exits with a non-zero code (useful for debugging failed CI runs)
+
+```bash
+# Only save recordings when something fails
+terminal-mcp --record=on-failure
+```
+
+### MCP Tool Recording
+
+AI assistants can also control recording programmatically via MCP tools:
+
+1. Call `startRecording` to begin capturing
+2. Perform terminal operations
+3. Call `stopRecording` to finalize and save
+
+This enables AI-driven workflows like "record this debugging session" or "capture this demo".
 
 ## Architecture
 
@@ -216,6 +318,7 @@ See the [docs](./docs/) folder for detailed documentation:
 - [Overview](./docs/index.md)
 - [Installation](./docs/installation.md)
 - [Tools Reference](./docs/tools.md)
+- [Recording](./docs/recording.md)
 - [Configuration](./docs/configuration.md)
 - [Sandbox Mode](./docs/sandbox.md)
 - [Examples](./docs/examples.md)

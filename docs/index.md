@@ -16,8 +16,9 @@ Terminal MCP bridges the gap between AI assistants and interactive terminal appl
 - **Full Terminal Emulation**: Uses xterm.js headless for accurate VT100/ANSI terminal emulation
 - **Cross-Platform PTY**: Leverages node-pty for native pseudo-terminal support on macOS, Linux, and Windows
 - **MCP Protocol**: Implements the Model Context Protocol for seamless AI assistant integration
-- **Simple API**: Five intuitive tools for complete terminal control
-- **Configurable**: Customizable terminal dimensions and shell selection
+- **Simple API**: Seven intuitive tools for complete terminal control
+- **Session Recording**: Record terminal sessions to asciicast v2 format for playback with asciinema
+- **Configurable**: Customizable terminal dimensions, shell selection, and recording options
 - **Sandbox Mode**: Optional security restrictions for filesystem and network access
 
 ## Quick Start
@@ -50,6 +51,7 @@ Configure in Claude Code's MCP settings:
 
 - [Installation](./installation.md) - Setup and installation instructions
 - [Tools Reference](./tools.md) - Complete API documentation for all MCP tools
+- [Recording](./recording.md) - Session recording to asciicast format
 - [Configuration](./configuration.md) - Configuration options and customization
 - [Sandbox Mode](./sandbox.md) - Security restrictions for filesystem and network
 - [Examples](./examples.md) - Usage examples and common patterns
