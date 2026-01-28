@@ -192,6 +192,10 @@ terminal-mcp --sandbox --sandbox-config ~/.terminal-mcp-sandbox.json
 ```
 
 The interactive mode shows a TUI dialog to configure permissions:
+
+<p align="center">
+  <img src="sandbox-permissions.png" alt="Sandbox Permissions Dialog" width="400">
+</p>
 - **Read/Write**: Full access (current directory, /tmp, caches)
 - **Read-Only**: Can read but not modify (home directory)
 - **Blocked**: No access (SSH keys, cloud credentials, auth tokens)
